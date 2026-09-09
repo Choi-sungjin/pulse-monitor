@@ -1,0 +1,18 @@
+# Build outputs and local diagnostics; keep the source icon assets.
+/dist/
+/bin/
+/obj/
+/outputs/
+*.exe
+*.pdb
+*.zip
+*.log
+*-live.json
+*-self-test.json
+settings.json
+last-error.json
+.vs/
+.vscode/
+.env
+.env.*
+!.env.example
