@@ -24,7 +24,7 @@ Linux에서는 프로세스별 사용량도 상세 창에 표시한다.
 **Ubuntu / Linux**
 
 ```sh
-./linux/install.sh --autostart
+sh linux/install.sh --autostart
 ~/.local/share/pulse-monitor/launch.sh
 ```
 

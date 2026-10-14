@@ -13,7 +13,7 @@ Ubuntu 기본 확장 ubuntu-appindicators를 사용할 수 있다.
 GPU에는 기존 NVIDIA 드라이버와 nvidia-smi를 사용한다.
 
 ```sh
-./linux/install.sh --autostart
+sh linux/install.sh --autostart
 "${XDG_DATA_HOME:-$HOME/.local/share}/pulse-monitor/launch.sh"
 ```
 
