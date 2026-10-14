@@ -1,0 +1,52 @@
+name: Verify installers
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y python3-psutil python3-gi gir1.2-gtk-3.0 libayatana-appindicator3-1 desktop-file-utils
+      - run: /usr/bin/python3 -m unittest discover -s linux -p 'test_*.py' -v
+      - run: ./linux/install.sh --autostart
+      - run: |
+          desktop-file-validate ~/.local/share/applications/pulse-monitor.desktop
+          desktop-file-validate ~/.config/autostart/pulse-monitor.desktop
+          ~/.local/share/pulse-monitor/launch.sh --diagnostics
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PulseMonitor-linux-source
+          path: |
+            linux/
+            assets/PulseWidget.png
+            LICENSE
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build, self-test and install
+        shell: powershell
+        run: |
+          ./build.ps1 -OutputDirectory ./dist
+          $runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
+          if (-not (Test-Path $runKey)) { New-Item -Path $runKey | Out-Null }
+          New-ItemProperty -Path $runKey -Name PulseInstallerSentinel -Value 'keep-me' -PropertyType String | Out-Null
+          ./install-windows.ps1 -NoLaunch
+          if ((Get-ItemPropertyValue $runKey -Name PulseInstallerSentinel) -ne 'keep-me') { throw 'Other app autostart entry was changed' }
+          $exe = Join-Path $env:LOCALAPPDATA 'Programs/PulseMonitor/PulseWidget.exe'
+          if (-not (Test-Path $exe)) { throw 'Installed exe missing' }
+          if (-not (Test-Path ($exe + '.config'))) { throw 'Installed config missing' }
+          $run = Get-ItemPropertyValue 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -Name PulseWidget
+          if ($run -ne ('"' + $exe + '"')) { throw 'Autostart entry mismatch' }
+          $lnk = Join-Path ([Environment]::GetFolderPath('Programs')) 'Pulse Monitor.lnk'
+          if (-not (Test-Path $lnk)) { throw 'Start menu shortcut missing' }
+          ./install-windows.ps1 -NoLaunch -NoAutostart
+          if (Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -Name PulseWidget -ErrorAction SilentlyContinue) { throw 'Autostart opt-out failed' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PulseMonitor-windows-x64
+          path: |
+            dist/
+            install-windows.ps1
+            LICENSE

@@ -1,3 +1,43 @@
+# Pulse — Windows / Linux 시스템 모니터
+
+Windows 11 x64와 Ubuntu 24.04용 설치 경로를 제공한다.
+CPU·GPU·메모리 사용률을 작업표시줄 또는 상단 바에서 확인할 수 있다.
+Linux에서는 프로세스별 사용량도 상세 창에 표시한다.
+
+## 빠른 설치
+
+소스 저장소를 내려받은 폴더에서 실행한다.
+
+**Windows PowerShell**
+
+```powershell
+./install-windows.ps1
+```
+
+현재 사용자 `%LOCALAPPDATA%\Programs\PulseMonitor`에 설치하고 시작 메뉴 바로가기와
+로그인 자동 시작을 등록한다. 관리자 권한은 필요 없다.
+실행 중인 Pulse는 먼저 메뉴에서 종료한다. 기존 설정은 유지된다.
+자동 시작을 원하지 않으면 `-NoAutostart`, 설치만 하려면 `-NoLaunch`를 붙인다.
+소스에서는 .NET Framework 컴파일러로 빌드하고 자체 검사를 통과한 뒤 설치한다.
+실행 정책이 스크립트를 막는 경우 조직/PC 정책에 맞게 스크립트 실행을 허용해야 한다.
+
+**Ubuntu / Linux**
+
+```sh
+./linux/install.sh --autostart
+~/.local/share/pulse-monitor/launch.sh
+```
+
+사용자 계정에 설치하며 로그인할 때 창 없이 자동 시작한다.
+상세한 의존성·사용법·제거 방법은 [Linux 안내](linux/README.md)를 참고한다.
+두 플랫폼 모두 로그인 이후 시작하며 로그인 화면에서 실행하는 시스템 서비스가 아니다.
+
+GitHub Actions의 **Verify installers**에서 Windows 빌드·자체 검사·설치·자동 시작 등록과
+Linux 수집기·설치를 검사한다. 성공한 실행의 Artifacts에서 플랫폼별 압축파일을 받을 수 있다.
+자동 검사 통과는 실제 Windows 작업표시줄이나 재부팅 검증을 뜻하지 않는다.
+
+---
+
 # Pulse 1.1.1 — 작업표시줄 숫자 모니터
 
 **Windows 작업표시줄에서 CPU·GPU·RAM 사용률을 실시간으로 보여주는 작은 시스템 모니터**
@@ -22,7 +62,7 @@ Windows 11 x64, .NET Framework 4.8 이상용 초기 버전이다.
 
 ## 설치 방법
 
-별도 설치 마법사가 없는 **압축 해제형 프로그램**이다. 기본 기능은 인터넷 연결과 관리자 권한 없이 동작한다.
+아래는 기존 Windows **압축 해제형 프로그램**의 수동 설치 방법이다. 기본 기능은 인터넷 연결과 관리자 권한 없이 동작한다.
 
 1. 배포 파일 **`PulseWidget-windows-x64.zip`**을 다운로드한다.
    배포 파일이 아직 게시되지 않았다면 아래의 **소스에서 빌드하기**를 이용한다.
