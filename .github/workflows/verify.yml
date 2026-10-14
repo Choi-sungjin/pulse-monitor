@@ -7,8 +7,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get update && sudo apt-get install -y python3-psutil python3-gi gir1.2-gtk-3.0 libayatana-appindicator3-1 desktop-file-utils
-      - run: /usr/bin/python3 -m unittest discover -s linux -p 'test_*.py' -v
+      - run: sudo apt-get update && sudo apt-get install -y python3-psutil python3-gi gir1.2-gtk-3.0 libayatana-appindicator3-1 desktop-file-utils xvfb
+      - run: xvfb-run -a /usr/bin/python3 -m unittest discover -s linux -p 'test_*.py' -v
       - run: ./linux/install.sh --autostart
       - run: |
           desktop-file-validate ~/.local/share/applications/pulse-monitor.desktop

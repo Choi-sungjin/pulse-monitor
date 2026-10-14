@@ -20,7 +20,7 @@ if ! /usr/bin/python3 -c 'import gi; gi.require_version("AyatanaAppIndicator3", 
     for package in "$PULSE_TMP"/*.deb; do dpkg-deb -x "$package" "$PULSE_TMP/unpacked"; done
     find "$PULSE_TMP/unpacked" -name 'AyatanaAppIndicator3-0.1.typelib' -exec cp '{}' "$PULSE_DEST/typelib/" \;
 fi
-cp "$PULSE_SOURCE/pulse.py" "$PULSE_SOURCE/metrics.py" "$PULSE_SOURCE/launch.sh" "$PULSE_DEST/"
+cp "$PULSE_SOURCE/pulse.py" "$PULSE_SOURCE/metrics.py" "$PULSE_SOURCE/process_table.py" "$PULSE_SOURCE/launch.sh" "$PULSE_DEST/"
 cp "$PULSE_SOURCE/../assets/PulseWidget.png" "$PULSE_DEST/"
 cp "$PULSE_SOURCE/../LICENSE" "$PULSE_DEST/"
 chmod 755 "$PULSE_DEST/launch.sh"

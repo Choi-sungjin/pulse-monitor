@@ -45,6 +45,47 @@ def gpu_readings():
         return []
 
 
+def parse_process_gpu(text):
+    """Read pmon's named columns; do not depend on driver-specific column counts."""
+    columns = None
+    devices = {}
+    for line in text.splitlines():
+        fields = line.split()
+        if line.startswith('#'):
+            header = line.lstrip('#').split()
+            if all(name in header for name in ('gpu', 'pid', 'sm', 'fb')):
+                columns = {name: header.index(name) for name in ('gpu', 'pid', 'sm', 'fb')}
+            continue
+        if not columns or len(fields) <= max(columns.values()):
+            continue
+        try:
+            gpu, pid = (int(fields[columns[key]]) for key in ('gpu', 'pid'))
+        except ValueError:
+            continue
+        if gpu < 0 or pid <= 0:
+            continue
+        devices[(gpu, pid)] = (number(fields[columns['sm']]), number(fields[columns['fb']]))
+    by_pid = {}
+    for (_, pid), values in devices.items():
+        by_pid.setdefault(pid, []).append(values)
+    # If one reported device cannot supply a metric, its total is unknown.
+    return {pid: dict(gpu=(sum(v[0] for v in rows) if all(v[0] is not None for v in rows) else None),
+                      gpu_memory=(sum(v[1] for v in rows) if all(v[1] is not None for v in rows) else None))
+            for pid, rows in by_pid.items()}
+
+
+def process_gpu_readings():
+    command = shutil.which('nvidia-smi')
+    if not command:
+        return {}
+    try:
+        result = subprocess.run([command, 'pmon', '-c', '1', '-s', 'um'],
+                                capture_output=True, text=True, timeout=2, check=True)
+        return parse_process_gpu(result.stdout)
+    except (OSError, subprocess.SubprocessError):
+        return {}
+
+
 class Collector:
     def __init__(self):
         self.previous_net = None
@@ -72,7 +113,10 @@ class Collector:
                     cpu=process.cpu_percent(None), rss=info['memory_info'].rss))
             except (psutil.Error, OSError):
                 continue
-        processes.sort(key=lambda p: (p['cpu'], p['rss']), reverse=True)
+        gpu_processes = process_gpu_readings()
+        for process in processes:
+            reading = gpu_processes.get(process['pid'], {})
+            process.update(gpu=reading.get('gpu'), gpu_memory=reading.get('gpu_memory'))
         temperature = None
         try:
             sensors = psutil.sensors_temperatures()
@@ -88,4 +132,4 @@ class Collector:
         return dict(timestamp=time.time(), cpu=cpu, cpu_temp=temperature,
                     ram_percent=ram.percent, ram_used=ram.total-ram.available,
                     ram_total=ram.total, down=down, up=up,
-                    gpus=gpu_readings(), processes=processes[:12])
+                    gpus=gpu_readings(), processes=processes)

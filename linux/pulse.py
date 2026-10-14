@@ -33,6 +33,7 @@ def main():
     gi.require_version('Gtk', '3.0')
     gi.require_version('AyatanaAppIndicator3', '0.1')
     from gi.repository import Gtk, GLib, Gio, Gdk, AyatanaAppIndicator3 as Indicator
+    from process_table import ProcessTable
 
     class Pulse(Gtk.Application):
         def __init__(self):
@@ -50,7 +51,7 @@ def main():
             self.started = True
             self.hold()
             self.window = Gtk.ApplicationWindow(application=self, title='Pulse Monitor')
-            self.window.set_default_size(680, 570)
+            self.window.set_default_size(960, 650)
             self.window.set_border_width(20)
             self.window.set_icon_from_file(str(ROOT / 'PulseWidget.png'))
             self.window.connect('delete-event', self.hide_window)
@@ -65,23 +66,13 @@ def main():
             self.summary.set_line_wrap(True)
             layout.pack_start(self.summary, False, False, 0)
             layout.pack_start(Gtk.Separator(), False, False, 0)
-            label = Gtk.Label(label='CPU 사용량 상위 프로세스 · CPU 100% = 코어 1개', xalign=0)
+            label = Gtk.Label(label='전체 프로세스 · 열 제목 클릭으로 정렬 ↕ · CPU 100% = 코어 1개', xalign=0)
             layout.pack_start(label, False, False, 0)
-            self.store = Gtk.ListStore(int, str, float, float)
-            tree = Gtk.TreeView(model=self.store)
-            tree.get_accessible().set_name('프로세스별 CPU와 메모리 사용량')
-            for index, name in enumerate(('PID', '프로세스', 'CPU %', '메모리 MiB')):
-                renderer = Gtk.CellRendererText()
-                column = Gtk.TreeViewColumn(name, renderer, text=index)
-                column.set_expand(index == 1)
-                if index >= 2:
-                    renderer.set_property('xalign', 1.0)
-                    column.set_cell_data_func(renderer, lambda col, cell, model, it, idx:
-                        cell.set_property('text', f'{model[it][idx]:.1f}'), index)
-                tree.append_column(column)
+            self.table = ProcessTable()
+            self.store = self.table.store
             scroll = Gtk.ScrolledWindow()
             scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
-            scroll.add(tree)
+            scroll.add(self.table)
             layout.pack_start(scroll, True, True, 0)
             self.status = Gtk.Label(label='2초마다 갱신 · 창을 닫아도 상단 바에서 실행 중', xalign=0)
             layout.pack_start(self.status, False, False, 0)
@@ -179,9 +170,7 @@ def main():
             lines.append(f"네트워크 전체  ↓ {fmt(down, ' KiB/s')}  ↑ {fmt(up, ' KiB/s')}")
             self.summary.set_text('\n'.join(lines))
             self.menu_status.set_label(f"CPU {s['cpu']:.1f}% · RAM {s['ram_percent']:.1f}%")
-            self.store.clear()
-            for p in s['processes']:
-                self.store.append([p['pid'], p['name'], p['cpu'], p['rss']/2**20])
+            self.table.refresh(s['processes'])
             self.status.set_text(time.strftime('%H:%M:%S') + ' 갱신 · 2초 주기 · 닫으면 상단 바에서 실행')
             return False
 
